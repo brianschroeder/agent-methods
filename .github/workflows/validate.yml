@@ -1,0 +1,62 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate plugin manifests are valid JSON
+        run: |
+          python3 -c "import json; json.load(open('.claude-plugin/plugin.json'))"
+          python3 -c "import json; json.load(open('.claude-plugin/marketplace.json'))"
+
+      - name: Validate SKILL.md frontmatter
+        run: |
+          set -e
+          FILE=skills/methods/SKILL.md
+          head -1 "$FILE" | grep -q '^---$'
+          grep -q '^name:' "$FILE"
+          grep -q '^description:' "$FILE"
+
+      - name: Validate bundled assets are present
+        run: |
+          set -e
+          test -f skills/methods/assets/methods.template.md
+          test -f skills/methods/assets/claude-md-block.md
+          grep -q '<!-- methods:start -->' skills/methods/assets/claude-md-block.md
+          grep -q '<!-- methods:end -->' skills/methods/assets/claude-md-block.md
+
+      - name: Validate the safety gate is present in every place it must be
+        run: |
+          set -e
+          # The gate is load-bearing: it must appear in the always-loaded CLAUDE.md block,
+          # in the template that lands in repos, and in the skill itself. Losing it from
+          # any one of the three silently removes the guardrail for that reading path.
+          for FILE in skills/methods/SKILL.md \
+                      skills/methods/assets/methods.template.md \
+                      skills/methods/assets/claude-md-block.md; do
+            grep -qi 'read-only' "$FILE"
+            grep -qi 'least privilege' "$FILE"
+            grep -qi 'never record' "$FILE"
+            grep -q 'none safe yet' "$FILE"
+          done
+
+      - name: Validate the routing framing is present wherever an entry gets written
+        run: |
+          set -e
+          # Losing this is how methods.md quietly turns into a second copy of
+          # agent-memory.md: without the conclusion-vs-procedure split stated where the
+          # entry is written, durable facts get filed here and go stale unread.
+          for FILE in skills/methods/SKILL.md \
+                      skills/methods/assets/methods.template.md \
+                      skills/methods/assets/claude-md-block.md \
+                      README.md; do
+            grep -qi 'counterpart' "$FILE"
+            grep -qi 'conclusion vs. procedure' "$FILE"
+            grep -qi 'wrong in a month' "$FILE"
+          done

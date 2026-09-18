@@ -1,0 +1,14 @@
+{
+  "name": "agent-methods",
+  "owner": {
+    "name": "Brian Schroeder",
+    "url": "https://github.com/brianschroeder"
+  },
+  "plugins": [
+    {
+      "name": "agent-methods",
+      "source": ".",
+      "description": "Repo-level methods for Claude Code, the counterpart to agent memory: where memory stores durable learnings, methods store safe, repeatable procedures for fetching real-time answers and other useful information."
+    }
+  ]
+}
